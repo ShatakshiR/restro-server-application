@@ -1,6 +1,12 @@
 use mongodb::bson;
-use mongodb::bson::{oid::ObjectId, Document};
-use serde::{Deserialize, Serialize, Serializer};
+use mongodb::bson::Document;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Counters{
+    pub id: String,
+    pub sequence_value: isize
+}
 
 pub fn struct_to_document<'a, T: Sized + Serialize + Deserialize<'a>>(t: &T) -> Option<Document> {
     let mid: Option<Document> = bson::to_bson(t)
@@ -21,12 +27,3 @@ pub fn struct_to_document<'a, T: Sized + Serialize + Deserialize<'a>>(t: &T) -> 
     })
 }
 
-pub fn serialize_object_id<S>(oid: &Option<ObjectId>, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match oid.as_ref().map(|x| x.to_hex()) {
-        Some(v) => s.serialize_str(&v),
-        None => s.serialize_none(),
-    }
-}

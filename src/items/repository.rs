@@ -46,16 +46,41 @@ pub async fn get_item_with_id(id: &String, connection: &DB) -> Result<Option<Ite
     Ok(item)
 }
 
-pub async fn insert_item_with_id(item: &Item, connection: &DB) -> Result<()> {
+pub async fn get_items_for_ordered_items(
+    connection: &DB,
+    items_ids: &Vec<ObjectId>,
+) -> Result<Vec<Item>> {
+    let mut item_cursor = connection
+        .get_collection("Item")
+        .find(Some(doc! {"_id": items_ids}), None)
+        .await
+        .map_err(MongoQueryError)?;
+
+    let mut items: Vec<Item> = Vec::new();
+    while let Some(result) = item_cursor.next().await {
+        match result {
+            Ok(result) => {
+                let item: Item = bson::from_document(result).unwrap();
+                items.push(item);
+            }
+            Err(_) => {}
+        }
+    }
+
+    Ok(items)
+}
+
+pub async fn insert_item_with(item: &Item, connection: &DB) -> Result<String> {
     let insertable = InsertableItem::from_item(item.clone());
     let serialized_item = bson::to_bson(&insertable).unwrap();
-    connection
+    let cursor = connection
         .get_collection(COLLECTION)
         .insert_one(bson::from_bson(serialized_item).unwrap(), None)
         .await
         .map_err(MongoQueryError)?;
+    let inserted_id = cursor.inserted_id;
 
-    Ok(())
+    Ok(bson::from_bson(inserted_id).unwrap())
 }
 
 pub async fn update_item_with_id(id: &String, item: &Item, connection: &DB) -> Result<String> {
@@ -90,7 +115,4 @@ pub async fn delete_item_with_id(id: &String, connection: &DB) -> Result<String>
     Ok(response)
 }
 
-// pub async fn delete_all(connection: &DB) -> Result<()> {
-//     connection.get_collection(COLLECTION).drop()
-//     Ok(())
-// }
+

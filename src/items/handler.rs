@@ -17,7 +17,7 @@ pub async fn item_with_id_handler(id: String, db: DB) -> WebResult<impl Reply> {
 }
 
 pub async fn create_item_handler(body: Item, db: DB) -> WebResult<impl Reply> {
-    repository::insert_item_with_id(&body, &db)
+    repository::insert_item_with(&body, &db)
         .await
         .map_err(|e| reject::custom(e))?;
     Ok(StatusCode::CREATED)
