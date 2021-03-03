@@ -70,7 +70,7 @@ pub async fn get_items_for_ordered_items(
     Ok(items)
 }
 
-pub async fn insert_item_with(item: &Item, connection: &DB) -> Result<String> {
+pub async fn insert_item_with(item: &Item, connection: &DB) -> Result<()> {
     let insertable = InsertableItem::from_item(item.clone());
     let serialized_item = bson::to_bson(&insertable).unwrap();
     let cursor = connection
@@ -80,7 +80,7 @@ pub async fn insert_item_with(item: &Item, connection: &DB) -> Result<String> {
         .map_err(MongoQueryError)?;
     let inserted_id = cursor.inserted_id;
 
-    Ok(bson::from_bson(inserted_id).unwrap())
+    Ok(())
 }
 
 pub async fn update_item_with_id(id: &String, item: &Item, connection: &DB) -> Result<String> {

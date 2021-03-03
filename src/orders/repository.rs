@@ -28,10 +28,6 @@ pub async fn create_order(order: &OrderRequest, connection: &DB) -> Result<Order
     
     let items = repository::create_order_items(&order.ordered_items, connection, &inserted_id).await?;    
     let ordered_items: Vec<OrderItem> = items.into_iter().collect();
-    // let mut items_ids: Vec<ObjectId> = Vec::new();
-    // for item in ordered_items.clone(){
-    //   items_ids.push(ObjectId::with_string(&item.item_id).unwrap());
-    // } 
     
     let result = calculate_waiting_time_and_price(connection, &ordered_items.clone()).await?;
     let order_id_generated =  calculate_the_display_order_id(connection).await?;

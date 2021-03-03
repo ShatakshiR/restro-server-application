@@ -8,8 +8,6 @@ pub mod repository;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct OrderRequest {
-    // #[serde(rename = "_id")] // Use MongoDB's special primary key field name when serializing
-    // pub id: Option<ObjectId>,
     pub ordered_items: Vec<OrderItemRequest>,
     pub table_no: i32,
     pub order_status: String

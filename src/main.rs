@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
             .and(warp::body::json())
             .and(with_db(db.clone()))
             .and_then(order_handler::update_order_handler));   
-    let order_custom =  warp::path!("create-path");
+    let order_custom =  warp::path!("order-custom");
     let order_routes_custom = order_custom
             .and(warp::post())
             .and(warp::body::aggregate())
