@@ -33,7 +33,7 @@ pub async fn create_order_items(ordered_items: &Vec<OrderItemRequest>,connection
 
     let mut cursor = connection
         .get_collection(COLLECTION)
-        .find(Some(doc! { "order_id": order_id}), None)
+        .find(Some(doc!{ "order_id": ObjectId:: to_hex(order_id)}), None)
         .await
         .map_err(MongoQueryError)?;
 

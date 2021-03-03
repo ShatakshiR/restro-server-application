@@ -9,46 +9,9 @@ use futures::StreamExt;
 use mongodb::bson;
 use mongodb::bson::{doc, oid::ObjectId};
 use std::vec::Vec;
-use crate::order_items::{repository, OrderItem, OrderItemRequest};
-use crate::orders::OrderStatus;
+use crate::order_items::{repository, OrderItem};
 
 const COLLECTION: &str = "Orders";
-
-// pub async fn get_all_items(connection: &DB) -> Result<Vec<Orders>> {
-//     let mut cursor = connection
-//         .get_collection(COLLECTION)
-//         .find(None, None)
-//         .await
-//         .map_err(MongoQueryError)?;
-
-//     let mut results: Vec<Item> = Vec::new();
-//     while let Some(result) = cursor.next().await {
-//         match result {
-//             Ok(result) => {
-//                 let item: Item = bson::from_document(result).unwrap();
-//                 results.push(item);
-//             }
-//             Err(_) => {}
-//         }
-//     }
-
-//     Ok(results)
-// }
-
-// pub async fn get_item_with_id(id: &String, connection: &DB) -> Result<Option<Item>> {
-//     let loaded_item = connection
-//         .get_collection(COLLECTION)
-//         .find_one(
-//             Some(doc! { "_id":  ObjectId::with_string(&id).unwrap()}),
-//             None,
-//         )
-//         .await
-//         .map_err(MongoQueryError)?;
-
-//     let item: Option<Item> = bson::from_document(loaded_item.unwrap()).unwrap();
-
-//     Ok(item)
-// }
 
 pub async fn create_order(order: &OrderRequest, connection: &DB) -> Result<Order> {
     let mut insertable:OrderRequest = order.clone();
@@ -62,16 +25,15 @@ pub async fn create_order(order: &OrderRequest, connection: &DB) -> Result<Order
     let res = cursor.inserted_id;
     let inserted_id = res.as_object_id().expect("Retrieved _id should have been of type ObjectId");
     print!("inserted_id: {}", &inserted_id);
-    // let inserted_id:ObjectId = bson::from_bson(cursor.inserted_id).unwrap();
     
     let items = repository::create_order_items(&order.ordered_items, connection, &inserted_id).await?;    
     let ordered_items: Vec<OrderItem> = items.into_iter().collect();
-    let mut items_ids: Vec<ObjectId> = Vec::new();
-    for item in ordered_items.clone(){
-      items_ids.push(ObjectId::with_string(&item.item_id).unwrap());
-    } 
+    // let mut items_ids: Vec<ObjectId> = Vec::new();
+    // for item in ordered_items.clone(){
+    //   items_ids.push(ObjectId::with_string(&item.item_id).unwrap());
+    // } 
     
-    let result = calculate_waiting_time_and_price(connection, &items_ids).await?;
+    let result = calculate_waiting_time_and_price(connection, &ordered_items.clone()).await?;
     let order_id_generated =  calculate_the_display_order_id(connection).await?;
 
     let created_order = Order{
@@ -158,11 +120,16 @@ pub async fn calculate_the_display_order_id(connection: &DB) -> Result<isize>{
 
 //Calculating the average waiting time for each order based on the time to prepare each item in the order
 //Also calculating the total amount to be paid against each order, including the 5% taxes. 
-async fn calculate_waiting_time_and_price(connection: &DB, items_ids: &Vec<ObjectId>) -> Result<(i32, f64)> {
+async fn calculate_waiting_time_and_price(connection: &DB, order_items: &Vec<OrderItem>) -> Result<(i32, f64)> {
+        let mut items_ids: Vec<ObjectId> = Vec::new();
+        for item in order_items{
+            let oid = ObjectId::with_string(&item.item_id).map_err(|_| InvalidIDError(item.item_id.to_owned()))?;
+            items_ids.push(oid);
+        } 
         
         let mut item_cursor = connection
                                 .get_collection("Item")
-                                .find(Some(doc! {"_id": items_ids}), None)
+                                .find(Some(doc! {"_id": {"$in":items_ids}}), None)
                                 .await
                                 .map_err(MongoQueryError)?;
 
@@ -174,12 +141,15 @@ async fn calculate_waiting_time_and_price(connection: &DB, items_ids: &Vec<Objec
             match result {
                 Ok(result) => {
                     let item: Item = bson::from_document(result).unwrap();
-                    total_amount = total_amount + item.price as f64;
                     waiting_time = waiting_time + item.timeToPrepare.unwrap();
                     items.push(item);
                 }
                 Err(_) => {}
             }
+        }
+
+        for order_item in order_items{
+            total_amount = total_amount + (order_item.price * order_item.quantity) as f64;
         }
        
         //Calculating total_amount by adding 5% taxes.
