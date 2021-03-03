@@ -26,7 +26,7 @@ The application is equipped with mongodb cluster for the data connectivity.
    http://localhost:8000/menu
    
    This end point returns all the menu items in the collection
-   Sample response: [
+  <code> Sample response: [
     {
         "_id": {
             "$oid": "603876d72c19a8cde68a6a13"
@@ -48,7 +48,7 @@ The application is equipped with mongodb cluster for the data connectivity.
         "price": 1200,
         "name": "Spinach & Corn",
         "description": "Sauted Spinach & Sweet Corn"
-    }]
+    }] </code>
    
 2. Fetch menu item by id
 Endpoint: http://localhost:8000/menu/<item_id>
