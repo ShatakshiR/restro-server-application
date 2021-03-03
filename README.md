@@ -20,7 +20,8 @@ The default setup runs on http://localhost:8000/
 The application is equipped with mongodb cluster for the data connectivity.
 
 
-**End Points and their use**
+**End Points and their usage**
+
 **Menu**
 1. Fetch all menu items
    http://localhost:8000/menu
@@ -86,6 +87,7 @@ Response: {
     "description": "Mozarella Cheese, Tomato Sauce, Red Paprika, Capsicum, Bell Pepper"
 }
 
+**Orders**
 5. Create Order
 Method: POST
 Endpoint: http://localhost:8000/order/
