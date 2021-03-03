@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Counters{
+    #[serde(rename = "_id")] // Use MongoDB's special primary key field name when serializing
     pub id: String,
     pub sequence_value: isize
 }

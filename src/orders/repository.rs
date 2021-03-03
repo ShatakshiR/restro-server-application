@@ -94,22 +94,28 @@ pub async fn delete_item_with_id(id: &String, connection: &DB) -> Result<String>
 pub async fn calculate_the_display_order_id(connection: &DB) -> Result<isize>{
     let filter = doc!{"_id" : "orderId"};
     let update = doc!{"$inc": {"sequence_value":1}};
-    let cursor = connection
-    .get_collection(COLLECTION)
-    .find_one(filter.clone(), None)
+    let mut cursor = connection
+    .get_collection("counters")
+    .find(filter.clone(), None)
     .await
     .map_err(MongoQueryError)?;
     
     let mut new_sequence:isize = 0;  
     
-    for obj in cursor{
-        let  counter: Counters = bson::from_document(obj).unwrap();
-        new_sequence = counter.sequence_value+1;
-            print!("orderId: {}", counter.sequence_value);
+    while let Some(result) = cursor.next().await {
+        match result{
+            Ok(result) => {
+                let  counter:Counters = bson::from_document(result).unwrap();
+                new_sequence = counter.sequence_value+1;
+                    print!("orderId: {}", counter.sequence_value);
+        
+            }
+            Err(_) => {}
+        }
     }
 
     connection
-    .get_collection(COLLECTION)
+    .get_collection("counters")
     .update_one(filter, update, None)
     .await
     .map_err(MongoQueryError)?;
